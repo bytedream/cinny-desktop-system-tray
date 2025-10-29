@@ -5,6 +5,7 @@
 
 #[cfg(target_os = "macos")]
 mod menu;
+mod tray;
 
 use tauri::{utils::config::AppUrl, WindowUrl};
 
@@ -19,12 +20,17 @@ fn main() {
     context.config_mut().build.dev_path = AppUrl::Url(window_url.clone());
     let builder = tauri::Builder::default();
 
+    let builder = builder
+        .system_tray(tray::system_tray())
+        .on_system_tray_event(tray::system_tray_handler);
+
     #[cfg(target_os = "macos")]
     let builder = builder.menu(menu::menu());
 
     builder
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .plugin(tauri_plugin_window_state::Builder::default().build())
+        .on_window_event(tray::window_event_handler)
         .run(context)
         .expect("error while building tauri application")
 }
