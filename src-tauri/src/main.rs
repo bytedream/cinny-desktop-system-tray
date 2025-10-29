@@ -7,7 +7,7 @@
 mod menu;
 mod tray;
 
-use tauri::{utils::config::AppUrl, WindowUrl};
+use tauri::{utils::config::AppUrl, Manager, WindowUrl};
 
 fn main() {
     let port = 44548;
@@ -29,6 +29,14 @@ fn main() {
 
     builder
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
+        .plugin(tauri_plugin_single_instance::init(|app, _, _| {
+            let window = app.get_window("main").unwrap();
+            let tray_handle = match app.tray_handle_by_id(tray::TRAY_LABEL) {
+                Some(h) => h,
+                None => return,
+            };
+            tray::toggle_window_state(window, tray_handle)
+        }))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .on_window_event(tray::window_event_handler)
         .run(context)
